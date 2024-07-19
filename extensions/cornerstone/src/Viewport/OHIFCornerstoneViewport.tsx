@@ -465,7 +465,7 @@ const OHIFCornerstoneViewport = React.memo((props: withAppTypes) => {
         ></div>
         {/* Add the reactive graph below. UI components in the problem
         screenshot are present in other parts of the page, or their functions
-        are otherwise handled. I prefer to reuse code.*/}
+        are otherwise handled by other parts of the workflow. */}
         <div
           className="cornerstone-viewport-graph"
           style={{ height: '45%', width: '100%', padding: '2%' }}
@@ -779,7 +779,6 @@ const _getPointsForGraph = function (currentImageId: string | null | undefined):
   for (let i = 0; i < L; i += Math.round(L / 10)) {
     points.push([i / L, (pixelData[i] - low) / (high - low)]);
   }
-  console.log(points);
   return points;
 };
 
