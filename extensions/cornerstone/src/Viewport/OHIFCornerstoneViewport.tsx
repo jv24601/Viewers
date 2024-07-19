@@ -27,6 +27,10 @@ import { useAppConfig } from '@state';
 
 import { LutPresentation, PositionPresentation } from '../types/Presentation';
 
+import { LineChart } from '@ohif/ui';
+import { cache } from '@cornerstonejs/core';
+import { isAxisAlignedRectangle } from '@cornerstonejs/tools/dist/types/utilities/rectangleROITool';
+
 const STACK = 'stack';
 
 /**
@@ -170,6 +174,32 @@ const OHIFCornerstoneViewport = React.memo((props: withAppTypes) => {
       setImageScrollBarHeight();
     }
   }, [elementRef]);
+
+  // the official React documents advise using state when parents should react to child component data changes
+  const [doesGraphNeedUpdate, setDoesGraphNeedUpdate] = useState(false);
+
+  // a callback to pass to the child
+  const makeGraphUpdateCallback = useCallback(() => {
+    setDoesGraphNeedUpdate(true);
+  }, [setDoesGraphNeedUpdate]);
+
+  if (doesGraphNeedUpdate) {
+    setDoesGraphNeedUpdate(false);
+  }
+
+  // define constants to get the current slice
+  const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+  const currentImageSlice = viewport?.getSliceIndex();
+  const currentImageId = _getCurrentFrameImageId(displaySets, currentImageSlice);
+
+  // a helper to get points for the graph, mock values.
+  // the values of the actual graph data should be fetched asyncronously and cached for performance
+  const points = _getPointsForGraph(currentImageId);
+  const axis = {
+    x: { label: 'Pixel index', indexRef: 0, type: 'x', range: { min: 0, max: 1 } },
+    y: { label: 'Pixel value', indexRef: 1, type: 'y', range: { min: 0, max: 1 } },
+  };
+  const series = [{ points: points }];
 
   const cleanUpServices = useCallback(
     viewportInfo => {
@@ -425,7 +455,7 @@ const OHIFCornerstoneViewport = React.memo((props: withAppTypes) => {
       <div className="viewport-wrapper">
         <div
           className="cornerstone-viewport-element"
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: '55%', width: '100%' }}
           onContextMenu={e => e.preventDefault()}
           onMouseDown={e => e.preventDefault()}
           ref={el => {
@@ -433,12 +463,26 @@ const OHIFCornerstoneViewport = React.memo((props: withAppTypes) => {
             elementRef.current = el;
           }}
         ></div>
+        {/* Add the reactive graph below. UI components in the problem
+        screenshot are present in other parts of the page, or their functions
+        are otherwise handled. I prefer to reuse code.*/}
+        <div
+          className="cornerstone-viewport-graph"
+          style={{ height: '45%', width: '100%', padding: '2%' }}
+        >
+          <LineChart
+            showLegend={false}
+            axis={axis}
+            series={series}
+          ></LineChart>
+        </div>
         <CornerstoneOverlays
           viewportId={viewportId}
           toolBarService={toolbarService}
           element={elementRef.current}
           scrollbarHeight={scrollbarHeight}
           servicesManager={servicesManager}
+          updateNotifier={makeGraphUpdateCallback}
         />
         <CinePlayer
           enabledVPElement={enabledVPElement}
@@ -697,6 +741,46 @@ OHIFCornerstoneViewport.propTypes = {
   // of the imageData in the OHIFCornerstoneViewport. This prop is used
   // to set the initial state of the viewport's first image to render
   initialImageIdOrIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
+const _getCurrentFrameImageId = function (
+  displaySets,
+  currentImageSlice: number | null | undefined
+): string | null {
+  if (currentImageSlice == null || currentImageSlice == undefined || displaySets == null) {
+    return;
+  }
+  return displaySets[0]?.instances[currentImageSlice]?.imageId;
+};
+
+const _getPointsForGraph = function (currentImageId: string | null | undefined): number[][] {
+  if (currentImageId === undefined) {
+    return [[0, 0]];
+  }
+  const cachedImage = cache.getCachedImageBasedOnImageURI(currentImageId);
+
+  const pixelData = cachedImage?.image?.getPixelData();
+  const L = pixelData?.length || 0;
+  if (L === 0) {
+    return [[0, 0]];
+  }
+
+  /* For the purpose of illustration, we will create points to graph based on cached image pixel data.
+  For an actual application, we would read other cached data for the graph.
+  The actual pixel data used and transformations we apply are arbitrary just for aesthetics.
+  We would also have to take into account the encoding to
+  */
+
+  const points = [];
+
+  const low = cachedImage.image?.minPixelValue || 0;
+  const high = cachedImage.image?.maxPixelValue || 1;
+
+  for (let i = 0; i < L; i += Math.round(L / 10)) {
+    points.push([i / L, (pixelData[i] - low) / (high - low)]);
+  }
+  console.log(points);
+  return points;
 };
 
 export default OHIFCornerstoneViewport;

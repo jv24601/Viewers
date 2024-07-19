@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import ViewportImageScrollbar from './ViewportImageScrollbar';
 import CustomizableViewportOverlay from './CustomizableViewportOverlay';
@@ -6,13 +6,22 @@ import ViewportOrientationMarkers from './ViewportOrientationMarkers';
 import ViewportImageSliceLoadingIndicator from './ViewportImageSliceLoadingIndicator';
 
 function CornerstoneOverlays(props: withAppTypes) {
-  const { viewportId, element, scrollbarHeight, servicesManager } = props;
+  const { viewportId, element, scrollbarHeight, servicesManager, updateNotifier } = props;
   const { cornerstoneViewportService } = servicesManager.services;
   const [imageSliceData, setImageSliceData] = useState({
     imageIndex: 0,
     numberOfSlices: 0,
   });
   const [viewportData, setViewportData] = useState(null);
+
+  // wrap the callback for the slider to call the callback to update the parent
+  const setImageSliceDataWrapper = useCallback(
+    (sliceData: { imageIndex: number; numberOfSlices: number }) => {
+      setImageSliceData(sliceData);
+      updateNotifier();
+    },
+    [setImageSliceData, updateNotifier]
+  );
 
   useEffect(() => {
     const { unsubscribe } = cornerstoneViewportService.subscribe(
@@ -50,7 +59,7 @@ function CornerstoneOverlays(props: withAppTypes) {
         viewportData={viewportData}
         element={element}
         imageSliceData={imageSliceData}
-        setImageSliceData={setImageSliceData}
+        setImageSliceData={setImageSliceDataWrapper}
         scrollbarHeight={scrollbarHeight}
         servicesManager={servicesManager}
       />
