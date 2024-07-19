@@ -5,6 +5,7 @@ To test:
 1. Run in the command line "yarn install" then "yarn run dev"
 2. Open any test data in the "Basic Viewer" mode.
 3. Choose a DICOM instance from the left panel, and scroll through frames.
+4. Try with a couple data sets. Some have low variance or low frame #s.
 
 Todo:
 As of this commit, the UI was added to a viewport for the default mode. The
