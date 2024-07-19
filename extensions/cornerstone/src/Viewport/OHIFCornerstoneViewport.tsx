@@ -777,7 +777,10 @@ const _getPointsForGraph = function (currentImageId?: string): number[][] {
   const high = cachedImage?.image?.maxPixelValue || 1;
 
   for (let i = 0; i < L; i += Math.round(L / 10)) {
-    points.push([i / L, (pixelData[i] - low) / (high - low)]); // rescale x & y values to be in [0,1]
+    points.push([
+      i / L,
+      (pixelData[i] - low) / (high - low) / 2 + 0.25 + 0.25 * Math.sin((2 * 6.28 * i) / L),
+    ]); // rescale x & y values to be in [0,1], add a baseline complexity for illustration
   }
   return points;
 };
