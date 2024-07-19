@@ -745,24 +745,25 @@ OHIFCornerstoneViewport.propTypes = {
 
 const _getCurrentFrameImageId = function (
   displaySets,
-  currentImageSlice: number | null | undefined
-): string | null {
-  if (currentImageSlice == null || currentImageSlice == undefined || displaySets == null) {
+  currentImageSlice?: number
+): string | undefined {
+  if (currentImageSlice == null || currentImageSlice === undefined || displaySets == null) {
     return;
   }
   return displaySets[0]?.instances[currentImageSlice]?.imageId;
 };
 
-const _getPointsForGraph = function (currentImageId: string | null | undefined): number[][] {
-  if (currentImageId === undefined) {
-    return [[0, 0]];
-  }
-  const cachedImage = cache.getCachedImageBasedOnImageURI(currentImageId);
+const _getPointsForGraph = function (currentImageId?: string): number[][] {
+  const points = [];
+
+  const cachedImage = currentImageId
+    ? cache.getCachedImageBasedOnImageURI(currentImageId)
+    : undefined;
 
   const pixelData = cachedImage?.image?.getPixelData();
   const L = pixelData?.length || 0;
   if (L === 0) {
-    return [[0, 0]];
+    points.push([0, 0]);
   }
 
   /* For the purpose of illustration, we will create points to graph based on cached image pixel data.
@@ -771,13 +772,12 @@ const _getPointsForGraph = function (currentImageId: string | null | undefined):
   We would also have to take into account the encoding to
   */
 
-  const points = [];
-
-  const low = cachedImage.image?.minPixelValue || 0;
-  const high = cachedImage.image?.maxPixelValue || 1;
+  // use [0,1] default range to avoid division by 0.
+  const low = cachedImage?.image?.minPixelValue || 0;
+  const high = cachedImage?.image?.maxPixelValue || 1;
 
   for (let i = 0; i < L; i += Math.round(L / 10)) {
-    points.push([i / L, (pixelData[i] - low) / (high - low)]);
+    points.push([i / L, (pixelData[i] - low) / (high - low)]); // rescale x & y values to be in [0,1]
   }
   return points;
 };

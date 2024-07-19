@@ -1,0 +1,20 @@
+Summary: Overall, around 100 lines of code were modified across 2
+files to prove the concept of a graph updating reactively to DICOM pixel data.
+
+To test:
+1. Run in the command line "yarn install" then "yarn run dev"
+2. Open any test data in the "Basic Viewer" mode.
+3. Choose a DICOM instance from the left panel, and scroll through frames.
+
+Todo:
+As of this commit, the UI was added to a viewport for the default mode. The
+better pattern for long-term development would be to add a new mode
+(https://docs.ohif.org/development/ohif-cli) or show the graph conditionally
+based on the user's need to interact with it or based on data present in the
+DICOM. It also is probably worth caching the graph-points data depding on how
+the data is stored
+
+Anti-patterns and other codestyle improvements:
+1. The null/undef typechecks should be done with a core utility function.
+2. Strings such as axis labels should use the I18N patterns.
+3. Refactor the cornerstone-viewport styles into dedicated .css, not props.
